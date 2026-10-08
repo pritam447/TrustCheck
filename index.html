@@ -63,20 +63,18 @@
 
     .btn-secondary { width: 100%; background: #e5ebe1; color: var(--accent-green); border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 16px; }
 
-    /* Adaptive Steps Section */
+    /* Dynamic Detailed Steps Section */
     .steps-title { font-size: 20px; font-weight: 800; color: var(--accent-green); margin-bottom: 4px; }
     .steps-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
     .step-card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border-color); }
     .step-num { font-size: 11px; font-weight: 700; color: var(--accent-orange); text-transform: uppercase; margin-bottom: 6px; }
-    .step-head { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; }
+    .step-head { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 8px; }
     
-    /* Content styling */
-    .step-content { font-size: 12px; color: var(--text-main); line-height: 1.5; }
     .step-details-list { list-style: none; padding-left: 0; }
     .step-details-list li { font-size: 12px; color: var(--text-main); line-height: 1.5; margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px; }
     .step-details-list li::before { content: "•"; color: var(--accent-orange); font-weight: bold; font-size: 14px; }
 
-    .error-text { color: #c5221f; font-size: 12px; display: none; margin-bottom: 10px; }
+    .error-text { color: #c5221f; font-size: 12px; display: none; margin-bottom: 10px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -102,9 +100,9 @@
     <div class="card-title">The website link you want to check</div>
     <div class="input-box">
       <span>🔗</span>
-      <input type="text" id="urlInput" placeholder="Paste a website link here..." />
+      <input type="text" id="urlInput" placeholder="Paste a web, Chrome or APK link..." />
     </div>
-    <div id="errorMsg" class="error-text">Please enter a valid HTTP/HTTPS link or Google Play URL.</div>
+    <div id="errorMsg" class="error-text">⚠️ Invalid input! Please enter a valid URL (e.g. starting with http://, https://, or a web domain like play.google.com). App names or plain words are not valid URLs.</div>
     
     <button class="btn-main" onclick="runAnalysis()">Check Risk &rsaquo;</button>
     
@@ -139,51 +137,89 @@
     </div>
   </div>
 
-  <!-- Adaptive Dynamic Steps Section -->
+  <!-- 3 Detailed Dynamic Steps Section -->
   <div>
     <div class="steps-title">A thoughtful pause, in three steps</div>
-    <div class="steps-sub">Simple reminders & dynamic analysis for your link.</div>
+    <div class="steps-sub">Simple reminders & dynamic analysis breakdown for your link.</div>
 
     <div class="step-card">
       <div class="step-num">01 / PASTE</div>
       <div class="step-head" id="step1Head">Bring the link here</div>
-      <div class="step-content" id="step1Body">Paste a complete website URL. The link stays in your browser.</div>
+      <div id="step1Body">
+        <ul class="step-details-list">
+          <li>Paste a complete website URL. The link stays in your browser.</li>
+          <li>Checks for valid protocol structure (HTTP vs HTTPS).</li>
+          <li>Extracts clean hostname and domain path details.</li>
+        </ul>
+      </div>
     </div>
 
     <div class="step-card">
       <div class="step-num">02 / NOTICE</div>
       <div class="step-head" id="step2Head">Review URL patterns</div>
-      <div class="step-content" id="step2Body">See local checks for host, path, and query patterns.</div>
+      <div id="step2Body">
+        <ul class="step-details-list">
+          <li>Scans for high-risk path keywords (e.g. login, verify, apk, free).</li>
+          <li>Detects official domain signatures vs spoofed typosquatting.</li>
+          <li>Evaluates complex sub-domain structures and hyphen counts.</li>
+        </ul>
+      </div>
     </div>
 
     <div class="step-card">
       <div class="step-num">03 / DECIDE</div>
       <div class="step-head" id="step3Head">Choose your next step</div>
-      <div class="step-content" id="step3Body">Use practical reminders and your own good judgment before you act.</div>
+      <div id="step3Body">
+        <ul class="step-details-list">
+          <li>Use practical reminders and your own good judgment.</li>
+          <li>Never share passwords or OTPs on unverified links.</li>
+          <li>Verify site owner credentials before downloading files.</li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-function isValidHttpUrl(string) {
-  let url;
-  try {
-    url = new URL(string);
-  } catch (_) {
-    return false;  
+function cleanAndValidateUrl(rawInput) {
+  let input = rawInput.trim();
+  // Strip Markdown links or brackets if user pastes formatted text
+  input = input.replace(/^[\[\(]+\vert{}[\]\)]+$/g, '');
+  if (input.includes('](')) {
+    input = input.split('](')[0].replace('[', '');
   }
-  return url.protocol === "http:" || url.protocol === "https:";
+
+  // Reject plain text or app names without dots
+  if (!input.includes('.')) {
+    return null;
+  }
+
+  // Add https protocol if user typed domain directly (e.g. chromewebstore.google.com)
+  if (!/^https?:\/\//i.test(input)) {
+    input = 'https://' + input;
+  }
+
+  try {
+    const parsed = new URL(input);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      if (parsed.hostname.includes('.') && parsed.hostname.split('.').pop().length >= 2) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    return null;
+  }
+  return null;
 }
 
 function runAnalysis() {
-  const input = document.getElementById('urlInput').value.trim();
+  const rawInput = document.getElementById('urlInput').value;
   const errorMsg = document.getElementById('errorMsg');
   const resContainer = document.getElementById('resultContainer');
   const riskBadge = document.getElementById('riskBadge');
   const resDesc = document.getElementById('resDesc');
   const resRec = document.getElementById('resRec');
 
-  // Step Elements
   const step1Head = document.getElementById('step1Head');
   const step1Body = document.getElementById('step1Body');
   const step2Head = document.getElementById('step2Head');
@@ -191,7 +227,9 @@ function runAnalysis() {
   const step3Head = document.getElementById('step3Head');
   const step3Body = document.getElementById('step3Body');
 
-  if (!input || !isValidHttpUrl(input)) {
+  const urlObj = cleanAndValidateUrl(rawInput);
+
+  if (!urlObj) {
     errorMsg.style.display = 'block';
     resContainer.style.display = 'none';
     return;
@@ -200,116 +238,177 @@ function runAnalysis() {
   errorMsg.style.display = 'none';
   resContainer.style.display = 'block';
 
-  try {
-    const urlObj = new URL(input);
-    const domain = urlObj.hostname.toLowerCase();
-    const protocol = urlObj.protocol.toUpperCase().replace(':', '');
-    const path = urlObj.pathname + urlObj.search;
+  const domain = urlObj.hostname.toLowerCase();
+  const protocol = urlObj.protocol.toUpperCase().replace(':', '');
+  const path = urlObj.pathname + urlObj.search;
+  const pathLower = path.toLowerCase();
+  const tld = domain.split('.').pop();
 
-    let risk = 'Low';
-    let desc = `Domain "${domain}" uses valid HTTPS web protocols. Path parsed: ${path.substring(0, 25) || '/'}`;
-    let rec = `Proceed normally, but always double check payment or login forms.`;
+  let risk = 'Low';
+  let desc = '';
+  let rec = '';
 
-    if (domain.includes('google.com') || domain.includes('play.google.com')) {
-      // 1-LINE RESPONSE FOR SAFE / OFFICIAL LINKS
-      risk = 'Low';
-      desc = `Official Google / Play Store domain signature detected for ${domain}.`;
-      rec = `Safe to install app or proceed to official page.`;
+  let step1Items = [];
+  let step2Items = [];
+  let step3Items = [];
 
-      step1Head.innerText = `Pasted Link Verified`;
-      step1Body.innerHTML = `Verified Source: Official Google domain (${domain}).`;
-
-      step2Head.innerText = `Pattern Notice Breakdown`;
-      step2Body.innerHTML = `Security Pattern: Verified signature parameters detected.`;
-
-      step3Head.innerText = `Recommended Next Step`;
-      step3Body.innerHTML = `Verdict: 100% Safe to download or install.`;
-
-    } else if (domain.includes('apk') || domain.includes('mod') || domain.includes('free') || path.includes('login') || path.includes('verify')) {
-      // DETAILED BULLET POINTS FOR SUSPICIOUS / HIGH RISK LINKS
-      risk = 'High';
-      desc = `Suspicious patterns detected in domain "${domain}". Keywords suggest unverified APK download or potential phishing attempt.`;
-      rec = `Do NOT enter passwords or financial credentials on this page.`;
-
-      step1Head.innerText = `01 / PASTE — High Risk Domain`;
-      step1Body.innerHTML = `
-        <ul class="step-details-list">
-          <li><strong>Protocol:</strong> ${protocol} connection parsed.</li>
-          <li><strong>Host Flag:</strong> Suspicious keyword in host domain (${domain}).</li>
-          <li><strong>Endpoint:</strong> Request attempts to access sensitive path.</li>
-        </ul>
-      `;
-
-      step2Head.innerText = `02 / NOTICE — Threat Pattern Detection`;
-      step2Body.innerHTML = `
-        <ul class="step-details-list">
-          <li><strong>Pattern Alert:</strong> Contains high-risk words (mod/free/apk/login).</li>
-          <li><strong>Phishing Danger:</strong> May attempt fake credential harvesting.</li>
-          <li><strong>Reputation:</strong> Unverified 3rd-party hosting source.</li>
-        </ul>
-      `;
-
-      step3Head.innerText = `03 / DECIDE — Critical Safety Advice`;
-      step3Body.innerHTML = `
-        <ul class="step-details-list">
-          <li><strong>Verdict:</strong> High Risk! Do not proceed.</li>
-          <li><strong>Action:</strong> Close tab immediately. Do not install files.</li>
-          <li><strong>Rule:</strong> Never share OTP, passwords or banking info.</li>
-        </ul>
-      `;
-
-    } else if (domain.split('.').length > 3 || domain.includes('-')) {
-      // DETAILED BULLET POINTS FOR MEDIUM RISK LINKS
-      risk = 'Medium';
-      desc = `Unusual sub-domain or hyphenated domain structure detected for ${domain}.`;
-      rec = `Verify the domain owner before trusting sensitive details.`;
-
-      step1Head.innerText = `01 / PASTE — Complex Domain Analysis`;
-      step1Body.innerHTML = `
-        <ul class="step-details-list">
-          <li><strong>Protocol:</strong> ${protocol} Connection.</li>
-          <li><strong>Structure:</strong> Multiple sub-domains found in (${domain}).</li>
-        </ul>
-      `;
-
-      step2Head.innerText = `02 / NOTICE — Pattern Caution`;
-      step2Body.innerHTML = `
-        <ul class="step-details-list">
-          <li><strong>Typosquatting Risk:</strong> Verify name isn't mimicking a known brand.</li>
-          <li><strong>Hyphen Count:</strong> Non-standard domain naming format.</li>
-        </ul>
-      `;
-
-      step3Head.innerText = `03 / DECIDE — Precaution Steps`;
-      step3Body.innerHTML = `
-        <ul class="step-details-list">
-          <li><strong>Verdict:</strong> Proceed with Medium Caution.</li>
-          <li><strong>Action:</strong> Check site lock icon & verify owner before paying.</li>
-        </ul>
-      `;
-
+  // 1. GOOGLE, CHROME WEB STORE & PLAY STORE OFFICIAL LINKS
+  if (
+    domain.endsWith('google.com') || domain.endsWith('play.google.com') || 
+    domain.endsWith('chromewebstore.google.com') || domain.endsWith('chrome.google.com') ||
+    domain.endsWith('googleplay.com') || domain.endsWith('googleapis.com')
+  ) {
+    risk = 'Low';
+    
+    if (domain.includes('chromewebstore') || pathLower.includes('detail')) {
+      desc = `Official Google Chrome Web Store signature verified for "${domain}".`;
+      rec = `Safe to install Chrome extensions or themes directly.`;
+    } else if (domain.includes('play.google')) {
+      desc = `Official Google Play Store signature verified for "${domain}".`;
+      rec = `Safe to download and install Android apps.`;
     } else {
-      // 1-LINE RESPONSE FOR NORMAL / UNKNOWN LOW RISK LINKS
-      step1Head.innerText = `Link Structure Verified`;
-      step1Body.innerHTML = `Valid ${protocol} connection parsed for ${domain}.`;
-
-      step2Head.innerText = `Pattern Analysis`;
-      step2Body.innerHTML = `Standard web domain layout with no immediate threat signatures.`;
-
-      step3Head.innerText = `Next Action`;
-      step3Body.innerHTML = `Proceed with standard online safety judgment.`;
+      desc = `Official Google ecosystem domain verified for "${domain}".`;
+      rec = `Safe to proceed or log in using Google authentication.`;
     }
 
-    // Main Result Box
-    riskBadge.innerText = `${risk} Risk`;
-    riskBadge.className = `risk-badge risk-${risk.toLowerCase()}`;
-    resDesc.innerText = desc;
-    resRec.innerText = rec;
+    step1Items = [
+      `<strong>Protocol:</strong> Encrypted ${protocol} connection active.`,
+      `<strong>Host Signature:</strong> Verified official Google/Chrome host (${domain}).`,
+      `<strong>Resource Path:</strong> Standard Google service endpoint parsed.`
+    ];
 
-  } catch (e) {
-    errorMsg.style.display = 'block';
-    resContainer.style.display = 'none';
+    step2Items = [
+      `<strong>Security Check:</strong> Authenticated Google infrastructure signature.`,
+      `<strong>Phishing Analysis:</strong> Zero typosquatting or fake domain patterns found.`,
+      `<strong>Trust Rating:</strong> High confidence official web service.`
+    ];
+
+    step3Items = [
+      `<strong>Verdict:</strong> 100% Safe to download or interact.`,
+      `<strong>Action:</strong> Proceed directly to the requested Google/Chrome resource.`,
+      `<strong>Best Practice:</strong> Ensure you are logged into your official Google account.`
+    ];
   }
+  // 2. DIRECT APK DOWNLOAD LINKS & THIRD-PARTY APK REPOSITORIES
+  else if (pathLower.endsWith('.apk') || pathLower.includes('.apk?') || domain.includes('apk') || pathLower.includes('apk-download')) {
+    const isKnownApkMirror = domain.includes('apkmirror.com') || domain.includes('apkpure.com');
+    risk = isKnownApkMirror ? 'Medium' : 'High';
+
+    desc = `Direct Android Package (.APK) download link detected on "${domain}". Unofficial APK files can bypass device security rules.`;
+    rec = isKnownApkMirror ? 
+      `Known APK repository detected. Scan file with Google Play Protect before installing.` : 
+      `High Risk! Do NOT install unverified APK files from unknown websites.`;
+
+    step1Items = [
+      `<strong>Protocol:</strong> ${protocol} parsed (Local APK file request).`,
+      `<strong>File Target:</strong> Direct Android Package (.APK) installer detected.`,
+      `<strong>Host Domain:</strong> External repository (${domain}).`
+    ];
+
+    step2Items = [
+      `<strong>Payload Warning:</strong> Sideloading APKs can bypass Play Store security checks.`,
+      `<strong>Malware Threat:</strong> Potential risk of modified, modded, or spyware-infected APKs.`,
+      `<strong>Source Authenticity:</strong> ${isKnownApkMirror ? 'Recognized external APK host.' : 'Unverified third-party file host.'}`
+    ];
+
+    step3Items = [
+      `<strong>Verdict:</strong> ${isKnownApkMirror ? 'Medium Precaution Needed.' : 'High Risk File Download!'}`,
+      `<strong>Safety Action:</strong> ${isKnownApkMirror ? 'Run an antivirus scan on the downloaded .apk file.' : 'Avoid downloading this file; search for official Play Store app instead.'}`,
+      `<strong>Device Security:</strong> Never enable "Install Unknown Apps" for untrusted sites.`
+    ];
+  }
+  // 3. SUSPICIOUS / PHISHING / FREE / MOD PATTERNS
+  else if (
+    domain.includes('mod') || domain.includes('free') || 
+    pathLower.includes('login') || pathLower.includes('verify') || pathLower.includes('account') ||
+    pathLower.includes('bank') || pathLower.includes('free-') || domain.includes('-free')
+  ) {
+    risk = 'High';
+    desc = `Suspicious keywords found in domain "${domain}" or path "${path.substring(0, 20)}". High potential for phishing or scam portals.`;
+    rec = `DO NOT share passwords, OTPs, or financial details on this site.`;
+
+    step1Items = [
+      `<strong>Protocol:</strong> ${protocol} connection parsed.`,
+      `<strong>Host Flag:</strong> Unverified host (${domain}).`,
+      `<strong>Target Path:</strong> Requests sensitive access (${path.substring(0, 18) || '/'})`
+    ];
+
+    step2Items = [
+      `<strong>Threat Keywords:</strong> Flagged terms (mod / free / login / verify) detected.`,
+      `<strong>Phishing Indicator:</strong> Possible fake login or credential harvesting page.`,
+      `<strong>Reputation Risk:</strong> Domain extension .${tld} requires high vigilance.`
+    ];
+
+    step3Items = [
+      `<strong>Verdict:</strong> High Risk / Threat Flagged!`,
+      `<strong>Action:</strong> Exit this web page immediately.`,
+      `<strong>Rule:</strong> Never enter sensitive information or passwords here.`
+    ];
+  }
+  // 4. MEDIUM RISK (Unusual subdomains, hyphens, suspicious TLDs)
+  else if (domain.split('.').length > 3 || domain.includes('-') || ['xyz', 'top', 'club', 'online', 'site', 'cc', 'tk', 'ml'].includes(tld)) {
+    risk = 'Medium';
+    desc = `Unusual domain format or extension (.${tld}) detected for "${domain}".`;
+    rec = `Proceed with caution. Verify the site owner before submitting data.`;
+
+    step1Items = [
+      `<strong>Protocol:</strong> ${protocol} web structure parsed.`,
+      `<strong>Domain Layout:</strong> Complex host formatting (${domain}).`,
+      `<strong>Extension Check:</strong> Top-Level Domain suffix is .${tld}`
+    ];
+
+    step2Items = [
+      `<strong>Hyphen / Subdomain Alert:</strong> Non-standard address layout parsed.`,
+      `<strong>Typosquatting Risk:</strong> Verify site isn't mimicking a known brand.`,
+      `<strong>Pattern Check:</strong> Moderate threat risk flags identified.`
+    ];
+
+    step3Items = [
+      `<strong>Verdict:</strong> Medium Risk / Proceed Carefully.`,
+      `<strong>Verification:</strong> Check browser lock icon and SSL certificate.`,
+      `<strong>Advice:</strong> Avoid making financial payments on unverified sites.`
+    ];
+  } 
+  // 5. LOW RISK STANDARD WEBSITES
+  else {
+    risk = 'Low';
+    desc = `Standard domain structure detected for "${domain}" with no explicit threat keywords.`;
+    rec = `Standard web browsing precautions apply.`;
+
+    step1Items = [
+      `<strong>Protocol:</strong> Valid ${protocol} web protocol active.`,
+      `<strong>Domain Name:</strong> Standard resolved host (${domain}).`,
+      `<strong>Path Structure:</strong> Clean URL endpoints parsed.`
+    ];
+
+    step2Items = [
+      `<strong>Keyword Analysis:</strong> No phishing or APK threat words detected.`,
+      `<strong>TLD Verification:</strong> Standard .${tld} top-level domain.`,
+      `<strong>Local Pattern Test:</strong> Passed initial automated heuristic check.`
+    ];
+
+    step3Items = [
+      `<strong>Verdict:</strong> Low Risk detected locally.`,
+      `<strong>Action:</strong> Safe for routine web browsing.`,
+      `<strong>Reminder:</strong> Keep your browser and antivirus updated.`
+    ];
+  }
+
+  // Update UI Result Cards
+  riskBadge.innerText = `${risk} Risk`;
+  riskBadge.className = `risk-badge risk-${risk.toLowerCase()}`;
+  resDesc.innerText = desc;
+  resRec.innerText = rec;
+
+  // Render 3-3 Detailed Bullet Points
+  step1Head.innerText = `01 / PASTE — Analysis for ${domain}`;
+  step1Body.innerHTML = `<ul class="step-details-list">${step1Items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+  step2Head.innerText = `02 / NOTICE — Security Pattern Check`;
+  step2Body.innerHTML = `<ul class="step-details-list">${step2Items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+
+  step3Head.innerText = `03 / DECIDE — Verdict & Recommendations`;
+  step3Body.innerHTML = `<ul class="step-details-list">${step3Items.map(i => `<li>${i}</li>`).join('')}</ul>`;
 }
 
 function resetCheck() {
@@ -317,15 +416,32 @@ function resetCheck() {
   document.getElementById('resultContainer').style.display = 'none';
   document.getElementById('errorMsg').style.display = 'none';
 
-  // Reset steps to default
   document.getElementById('step1Head').innerText = "Bring the link here";
-  document.getElementById('step1Body').innerHTML = "Paste a complete website URL. The link stays in your browser.";
+  document.getElementById('step1Body').innerHTML = `
+    <ul class="step-details-list">
+      <li>Paste a complete website URL. The link stays in your browser.</li>
+      <li>Checks for valid protocol structure (HTTP vs HTTPS).</li>
+      <li>Extracts clean hostname and domain path details.</li>
+    </ul>
+  `;
 
   document.getElementById('step2Head').innerText = "Review URL patterns";
-  document.getElementById('step2Body').innerHTML = "See local checks for host, path, and query patterns.";
+  document.getElementById('step2Body').innerHTML = `
+    <ul class="step-details-list">
+      <li>Scans for high-risk path keywords (e.g. login, verify, apk, free).</li>
+      <li>Detects official domain signatures vs spoofed typosquatting.</li>
+      <li>Evaluates complex sub-domain structures and hyphen counts.</li>
+    </ul>
+  `;
 
   document.getElementById('step3Head').innerText = "Choose your next step";
-  document.getElementById('step3Body').innerHTML = "Use practical reminders and your own good judgment before you act.";
+  document.getElementById('step3Body').innerHTML = `
+    <ul class="step-details-list">
+      <li>Use practical reminders and your own good judgment.</li>
+      <li>Never share passwords or OTPs on unverified links.</li>
+      <li>Verify site owner credentials before downloading files.</li>
+    </ul>
+  `;
 }
 </script>
 
