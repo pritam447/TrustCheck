@@ -24,7 +24,31 @@
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 20px; color: var(--accent-green); }
     .logo-icon { background: var(--accent-green); color: white; padding: 4px 8px; border-radius: 8px; font-size: 14px; }
+    
+    .header-right { display: flex; align-items: center; gap: 10px; }
     .tagline { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .auth-btn-mini { background: var(--accent-green); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+    /* Auth Modal Overlay */
+    #authModal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px; }
+    .auth-modal-content { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--border-color); position: relative; }
+    
+    .auth-title { font-size: 20px; font-weight: 800; color: var(--accent-green); margin-bottom: 6px; text-align: center; }
+    .auth-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 20px; }
+
+    /* Social & Auth Buttons */
+    .btn-auth { width: 100%; background: #fafcf9; border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; font-weight: 600; font-size: 13px; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; transition: 0.2s; }
+    .btn-auth:hover { background: #f2f7f0; }
+    .google-btn { color: #1f332b; }
+    
+    .social-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .btn-social-sm { background: #fafcf9; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600; color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-social-sm:hover { background: #f2f7f0; }
+
+    .auth-divider { text-align: center; font-size: 11px; color: var(--text-muted); margin: 14px 0; position: relative; }
+    .auth-divider::before, .auth-divider::after { content: ""; position: absolute; top: 50%; width: 40%; height: 1px; background: var(--border-color); }
+    .auth-divider::before { left: 0; }
+    .auth-divider::after { right: 0; }
 
     /* Hero Section */
     .hero { text-align: center; margin-bottom: 24px; }
@@ -85,8 +109,38 @@
     <div class="logo">
       <span class="logo-icon">🛡️</span> TrustCheck
     </div>
-    <div class="tagline">🔒 A calmer way to pause</div>
+    <div class="header-right">
+      <div class="tagline" id="welcomeMsg" style="display:none;">Hi, User</div>
+      <button class="auth-btn-mini" id="authNavBtn" onclick="handleAuthAction()">Login</button>
+    </div>
   </header>
+
+  <!-- Login Modal Popup (Default visible on open) -->
+  <div id="authModal">
+    <div class="auth-modal-content">
+      <div class="auth-title">Sign in to TrustCheck</div>
+      <div class="auth-sub">Please sign in to access link scanning & threat analysis.</div>
+
+      <button class="btn-auth google-btn" onclick="simulateLogin('Google User')">
+        <span>🌐</span> Continue with Google
+      </button>
+      
+      <button class="btn-auth" onclick="simulateLogin('Microsoft User')" style="color: #00a4ef;">
+        <span>🪟</span> Continue with Microsoft
+      </button>
+
+      <div class="social-grid">
+        <button class="btn-social-sm" onclick="simulateLogin('Facebook User')"><span>f</span> Facebook</button>
+        <button class="btn-social-sm" onclick="simulateLogin('Instagram User')"><span>📸</span> Instagram</button>
+        <button class="btn-social-sm" onclick="simulateLogin('Mobile User')"><span>📱</span> Mobile</button>
+      </div>
+
+      <div class="auth-divider">security access required</div>
+      <div style="font-size: 11px; color: var(--text-muted); text-align: center;">
+        Sign in is mandatory to run link heuristic checks.
+      </div>
+    </div>
+  </div>
 
   <!-- Hero Text -->
   <div class="hero">
@@ -102,7 +156,7 @@
       <span>🔗</span>
       <input type="text" id="urlInput" placeholder="Paste a web, Chrome or APK link..." />
     </div>
-    <div id="errorMsg" class="error-text">⚠️ Invalid input! Please enter a valid URL (e.g. starting with http://, https://, or a web domain like play.google.com). App names or plain words are not valid URLs.</div>
+    <div id="errorMsg" class="error-text">⚠️ Invalid input! Please enter a valid URL (e.g. starting with http://, https://, or a web domain). App names or plain words are not valid URLs.</div>
     
     <button class="btn-main" onclick="runAnalysis()">Check Risk &rsaquo;</button>
     
@@ -181,20 +235,41 @@
 </div>
 
 <script>
+let isLoggedIn = false;
+
+function handleAuthAction() {
+  if (!isLoggedIn) {
+    document.getElementById('authModal').style.display = 'flex';
+  } else {
+    // Perform Logout -> Bring back modal lock
+    isLoggedIn = false;
+    document.getElementById('authNavBtn').innerText = 'Login';
+    document.getElementById('welcomeMsg').style.display = 'none';
+    document.getElementById('authModal').style.display = 'flex';
+    resetCheck();
+  }
+}
+
+function simulateLogin(providerName) {
+  isLoggedIn = true;
+  document.getElementById('authNavBtn').innerText = 'Logout';
+  const welcomeMsg = document.getElementById('welcomeMsg');
+  welcomeMsg.innerText = `Hi, ${providerName.split(' ')[0]}`;
+  welcomeMsg.style.display = 'block';
+  document.getElementById('authModal').style.display = 'none';
+}
+
 function cleanAndValidateUrl(rawInput) {
   let input = rawInput.trim();
-  // Strip Markdown links or brackets if user pastes formatted text
   input = input.replace(/^[\[\(]+\vert{}[\]\)]+$/g, '');
   if (input.includes('](')) {
     input = input.split('](')[0].replace('[', '');
   }
 
-  // Reject plain text or app names without dots
   if (!input.includes('.')) {
     return null;
   }
 
-  // Add https protocol if user typed domain directly (e.g. chromewebstore.google.com)
   if (!/^https?:\/\//i.test(input)) {
     input = 'https://' + input;
   }
@@ -213,6 +288,12 @@ function cleanAndValidateUrl(rawInput) {
 }
 
 function runAnalysis() {
+  // If not logged in, force open modal
+  if (!isLoggedIn) {
+    document.getElementById('authModal').style.display = 'flex';
+    return;
+  }
+
   const rawInput = document.getElementById('urlInput').value;
   const errorMsg = document.getElementById('errorMsg');
   const resContainer = document.getElementById('resultContainer');
@@ -252,79 +333,59 @@ function runAnalysis() {
   let step2Items = [];
   let step3Items = [];
 
-  // 1. GOOGLE, CHROME WEB STORE & PLAY STORE OFFICIAL LINKS
   if (
     domain.endsWith('google.com') || domain.endsWith('play.google.com') || 
     domain.endsWith('chromewebstore.google.com') || domain.endsWith('chrome.google.com') ||
     domain.endsWith('googleplay.com') || domain.endsWith('googleapis.com')
   ) {
     risk = 'Low';
-    
-    if (domain.includes('chromewebstore') || pathLower.includes('detail')) {
-      desc = `Official Google Chrome Web Store signature verified for "${domain}".`;
-      rec = `Safe to install Chrome extensions or themes directly.`;
-    } else if (domain.includes('play.google')) {
-      desc = `Official Google Play Store signature verified for "${domain}".`;
-      rec = `Safe to download and install Android apps.`;
-    } else {
-      desc = `Official Google ecosystem domain verified for "${domain}".`;
-      rec = `Safe to proceed or log in using Google authentication.`;
-    }
+    desc = `Official Google ecosystem domain verified for "${domain}".`;
+    rec = `Safe to proceed or log in using official authentication.`;
 
     step1Items = [
       `<strong>Protocol:</strong> Encrypted ${protocol} connection active.`,
       `<strong>Host Signature:</strong> Verified official Google/Chrome host (${domain}).`,
       `<strong>Resource Path:</strong> Standard Google service endpoint parsed.`
     ];
-
     step2Items = [
       `<strong>Security Check:</strong> Authenticated Google infrastructure signature.`,
       `<strong>Phishing Analysis:</strong> Zero typosquatting or fake domain patterns found.`,
       `<strong>Trust Rating:</strong> High confidence official web service.`
     ];
-
     step3Items = [
       `<strong>Verdict:</strong> 100% Safe to download or interact.`,
       `<strong>Action:</strong> Proceed directly to the requested Google/Chrome resource.`,
-      `<strong>Best Practice:</strong> Ensure you are logged into your official Google account.`
+      `<strong>Best Practice:</strong> Ensure you are logged into your official account.`
     ];
   }
-  // 2. DIRECT APK DOWNLOAD LINKS & THIRD-PARTY APK REPOSITORIES
   else if (pathLower.endsWith('.apk') || pathLower.includes('.apk?') || domain.includes('apk') || pathLower.includes('apk-download')) {
-    const isKnownApkMirror = domain.includes('apkmirror.com') || domain.includes('apkpure.com');
-    risk = isKnownApkMirror ? 'Medium' : 'High';
-
-    desc = `Direct Android Package (.APK) download link detected on "${domain}". Unofficial APK files can bypass device security rules.`;
-    rec = isKnownApkMirror ? 
-      `Known APK repository detected. Scan file with Google Play Protect before installing.` : 
-      `High Risk! Do NOT install unverified APK files from unknown websites.`;
+    risk = 'High';
+    desc = `Direct Android Package (.APK) download link detected on "${domain}".`;
+    rec = `High Risk! Do NOT install unverified APK files from unknown websites.`;
 
     step1Items = [
       `<strong>Protocol:</strong> ${protocol} parsed (Local APK file request).`,
       `<strong>File Target:</strong> Direct Android Package (.APK) installer detected.`,
       `<strong>Host Domain:</strong> External repository (${domain}).`
     ];
-
     step2Items = [
       `<strong>Payload Warning:</strong> Sideloading APKs can bypass Play Store security checks.`,
-      `<strong>Malware Threat:</strong> Potential risk of modified, modded, or spyware-infected APKs.`,
-      `<strong>Source Authenticity:</strong> ${isKnownApkMirror ? 'Recognized external APK host.' : 'Unverified third-party file host.'}`
+      `<strong>Malware Threat:</strong> Potential risk of modified or spyware-infected APKs.`,
+      `<strong>Source Authenticity:</strong> Unverified third-party file host.`
     ];
-
     step3Items = [
-      `<strong>Verdict:</strong> ${isKnownApkMirror ? 'Medium Precaution Needed.' : 'High Risk File Download!'}`,
-      `<strong>Safety Action:</strong> ${isKnownApkMirror ? 'Run an antivirus scan on the downloaded .apk file.' : 'Avoid downloading this file; search for official Play Store app instead.'}`,
+      `<strong>Verdict:</strong> High Risk File Download!`,
+      `<strong>Safety Action:</strong> Avoid downloading this file; search for official Play Store app instead.`,
       `<strong>Device Security:</strong> Never enable "Install Unknown Apps" for untrusted sites.`
     ];
   }
-  // 3. SUSPICIOUS / PHISHING / FREE / MOD PATTERNS
   else if (
     domain.includes('mod') || domain.includes('free') || 
     pathLower.includes('login') || pathLower.includes('verify') || pathLower.includes('account') ||
     pathLower.includes('bank') || pathLower.includes('free-') || domain.includes('-free')
   ) {
     risk = 'High';
-    desc = `Suspicious keywords found in domain "${domain}" or path "${path.substring(0, 20)}". High potential for phishing or scam portals.`;
+    desc = `Suspicious keywords found in domain "${domain}" or path "${path.substring(0, 20)}". High potential for phishing.`;
     rec = `DO NOT share passwords, OTPs, or financial details on this site.`;
 
     step1Items = [
@@ -332,44 +393,17 @@ function runAnalysis() {
       `<strong>Host Flag:</strong> Unverified host (${domain}).`,
       `<strong>Target Path:</strong> Requests sensitive access (${path.substring(0, 18) || '/'})`
     ];
-
     step2Items = [
       `<strong>Threat Keywords:</strong> Flagged terms (mod / free / login / verify) detected.`,
       `<strong>Phishing Indicator:</strong> Possible fake login or credential harvesting page.`,
       `<strong>Reputation Risk:</strong> Domain extension .${tld} requires high vigilance.`
     ];
-
     step3Items = [
       `<strong>Verdict:</strong> High Risk / Threat Flagged!`,
       `<strong>Action:</strong> Exit this web page immediately.`,
       `<strong>Rule:</strong> Never enter sensitive information or passwords here.`
     ];
   }
-  // 4. MEDIUM RISK (Unusual subdomains, hyphens, suspicious TLDs)
-  else if (domain.split('.').length > 3 || domain.includes('-') || ['xyz', 'top', 'club', 'online', 'site', 'cc', 'tk', 'ml'].includes(tld)) {
-    risk = 'Medium';
-    desc = `Unusual domain format or extension (.${tld}) detected for "${domain}".`;
-    rec = `Proceed with caution. Verify the site owner before submitting data.`;
-
-    step1Items = [
-      `<strong>Protocol:</strong> ${protocol} web structure parsed.`,
-      `<strong>Domain Layout:</strong> Complex host formatting (${domain}).`,
-      `<strong>Extension Check:</strong> Top-Level Domain suffix is .${tld}`
-    ];
-
-    step2Items = [
-      `<strong>Hyphen / Subdomain Alert:</strong> Non-standard address layout parsed.`,
-      `<strong>Typosquatting Risk:</strong> Verify site isn't mimicking a known brand.`,
-      `<strong>Pattern Check:</strong> Moderate threat risk flags identified.`
-    ];
-
-    step3Items = [
-      `<strong>Verdict:</strong> Medium Risk / Proceed Carefully.`,
-      `<strong>Verification:</strong> Check browser lock icon and SSL certificate.`,
-      `<strong>Advice:</strong> Avoid making financial payments on unverified sites.`
-    ];
-  } 
-  // 5. LOW RISK STANDARD WEBSITES
   else {
     risk = 'Low';
     desc = `Standard domain structure detected for "${domain}" with no explicit threat keywords.`;
@@ -380,13 +414,11 @@ function runAnalysis() {
       `<strong>Domain Name:</strong> Standard resolved host (${domain}).`,
       `<strong>Path Structure:</strong> Clean URL endpoints parsed.`
     ];
-
     step2Items = [
       `<strong>Keyword Analysis:</strong> No phishing or APK threat words detected.`,
       `<strong>TLD Verification:</strong> Standard .${tld} top-level domain.`,
       `<strong>Local Pattern Test:</strong> Passed initial automated heuristic check.`
     ];
-
     step3Items = [
       `<strong>Verdict:</strong> Low Risk detected locally.`,
       `<strong>Action:</strong> Safe for routine web browsing.`,
@@ -394,13 +426,11 @@ function runAnalysis() {
     ];
   }
 
-  // Update UI Result Cards
   riskBadge.innerText = `${risk} Risk`;
   riskBadge.className = `risk-badge risk-${risk.toLowerCase()}`;
   resDesc.innerText = desc;
   resRec.innerText = rec;
 
-  // Render 3-3 Detailed Bullet Points
   step1Head.innerText = `01 / PASTE — Analysis for ${domain}`;
   step1Body.innerHTML = `<ul class="step-details-list">${step1Items.map(i => `<li>${i}</li>`).join('')}</ul>`;
 
@@ -415,33 +445,6 @@ function resetCheck() {
   document.getElementById('urlInput').value = '';
   document.getElementById('resultContainer').style.display = 'none';
   document.getElementById('errorMsg').style.display = 'none';
-
-  document.getElementById('step1Head').innerText = "Bring the link here";
-  document.getElementById('step1Body').innerHTML = `
-    <ul class="step-details-list">
-      <li>Paste a complete website URL. The link stays in your browser.</li>
-      <li>Checks for valid protocol structure (HTTP vs HTTPS).</li>
-      <li>Extracts clean hostname and domain path details.</li>
-    </ul>
-  `;
-
-  document.getElementById('step2Head').innerText = "Review URL patterns";
-  document.getElementById('step2Body').innerHTML = `
-    <ul class="step-details-list">
-      <li>Scans for high-risk path keywords (e.g. login, verify, apk, free).</li>
-      <li>Detects official domain signatures vs spoofed typosquatting.</li>
-      <li>Evaluates complex sub-domain structures and hyphen counts.</li>
-    </ul>
-  `;
-
-  document.getElementById('step3Head').innerText = "Choose your next step";
-  document.getElementById('step3Body').innerHTML = `
-    <ul class="step-details-list">
-      <li>Use practical reminders and your own good judgment.</li>
-      <li>Never share passwords or OTPs on unverified links.</li>
-      <li>Verify site owner credentials before downloading files.</li>
-    </ul>
-  `;
 }
 </script>
 
