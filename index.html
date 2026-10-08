@@ -115,7 +115,7 @@
     </div>
   </header>
 
-  <!-- Login Modal Popup (Default visible on open) -->
+  <!-- Login Modal Popup -->
   <div id="authModal">
     <div class="auth-modal-content">
       <div class="auth-title">Sign in to TrustCheck</div>
@@ -241,7 +241,6 @@ function handleAuthAction() {
   if (!isLoggedIn) {
     document.getElementById('authModal').style.display = 'flex';
   } else {
-    // Perform Logout -> Bring back modal lock
     isLoggedIn = false;
     document.getElementById('authNavBtn').innerText = 'Login';
     document.getElementById('welcomeMsg').style.display = 'none';
@@ -288,7 +287,6 @@ function cleanAndValidateUrl(rawInput) {
 }
 
 function runAnalysis() {
-  // If not logged in, force open modal
   if (!isLoggedIn) {
     document.getElementById('authModal').style.display = 'flex';
     return;
