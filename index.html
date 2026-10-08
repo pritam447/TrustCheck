@@ -63,13 +63,18 @@
 
     .btn-secondary { width: 100%; background: #e5ebe1; color: var(--accent-green); border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 16px; }
 
-    /* Steps Section */
+    /* Adaptive Steps Section */
     .steps-title { font-size: 20px; font-weight: 800; color: var(--accent-green); margin-bottom: 4px; }
     .steps-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
-    .step-card { background: var(--card-bg); border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border-color); transition: all 0.3s ease; }
-    .step-num { font-size: 11px; font-weight: 700; color: var(--accent-orange); text-transform: uppercase; margin-bottom: 4px; }
-    .step-head { font-size: 14px; font-weight: 700; color: var(--accent-green); margin-bottom: 2px; }
-    .step-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+    .step-card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--border-color); }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--accent-orange); text-transform: uppercase; margin-bottom: 6px; }
+    .step-head { font-size: 15px; font-weight: 700; color: var(--accent-green); margin-bottom: 6px; }
+    
+    /* Content styling */
+    .step-content { font-size: 12px; color: var(--text-main); line-height: 1.5; }
+    .step-details-list { list-style: none; padding-left: 0; }
+    .step-details-list li { font-size: 12px; color: var(--text-main); line-height: 1.5; margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px; }
+    .step-details-list li::before { content: "•"; color: var(--accent-orange); font-weight: bold; font-size: 14px; }
 
     .error-text { color: #c5221f; font-size: 12px; display: none; margin-bottom: 10px; }
   </style>
@@ -134,27 +139,27 @@
     </div>
   </div>
 
-  <!-- 3 Dynamic Steps Section -->
+  <!-- Adaptive Dynamic Steps Section -->
   <div>
     <div class="steps-title">A thoughtful pause, in three steps</div>
-    <div class="steps-sub">Simple reminders & analysis breakdown for your link.</div>
+    <div class="steps-sub">Simple reminders & dynamic analysis for your link.</div>
 
     <div class="step-card">
       <div class="step-num">01 / PASTE</div>
       <div class="step-head" id="step1Head">Bring the link here</div>
-      <div class="step-desc" id="step1Desc">Paste a complete website URL. The link stays in your browser.</div>
+      <div class="step-content" id="step1Body">Paste a complete website URL. The link stays in your browser.</div>
     </div>
 
     <div class="step-card">
       <div class="step-num">02 / NOTICE</div>
       <div class="step-head" id="step2Head">Review URL patterns</div>
-      <div class="step-desc" id="step2Desc">See local checks for host, path, and query patterns.</div>
+      <div class="step-content" id="step2Body">See local checks for host, path, and query patterns.</div>
     </div>
 
     <div class="step-card">
       <div class="step-num">03 / DECIDE</div>
       <div class="step-head" id="step3Head">Choose your next step</div>
-      <div class="step-desc" id="step3Desc">Use practical reminders and your own good judgment before you act.</div>
+      <div class="step-content" id="step3Body">Use practical reminders and your own good judgment before you act.</div>
     </div>
   </div>
 </div>
@@ -180,13 +185,12 @@ function runAnalysis() {
 
   // Step Elements
   const step1Head = document.getElementById('step1Head');
-  const step1Desc = document.getElementById('step1Desc');
+  const step1Body = document.getElementById('step1Body');
   const step2Head = document.getElementById('step2Head');
-  const step2Desc = document.getElementById('step2Desc');
+  const step2Body = document.getElementById('step2Body');
   const step3Head = document.getElementById('step3Head');
-  const step3Desc = document.getElementById('step3Desc');
+  const step3Body = document.getElementById('step3Body');
 
-  // Strict check: Only valid URLs allowed
   if (!input || !isValidHttpUrl(input)) {
     errorMsg.style.display = 'block';
     resContainer.style.display = 'none';
@@ -199,37 +203,101 @@ function runAnalysis() {
   try {
     const urlObj = new URL(input);
     const domain = urlObj.hostname.toLowerCase();
+    const protocol = urlObj.protocol.toUpperCase().replace(':', '');
     const path = urlObj.pathname + urlObj.search;
 
     let risk = 'Low';
     let desc = `Domain "${domain}" uses valid HTTPS web protocols. Path parsed: ${path.substring(0, 25) || '/'}`;
     let rec = `Proceed normally, but always double check payment or login forms.`;
 
-    let step1Text = `URL Structure: Valid ${urlObj.protocol.toUpperCase()} link detected for domain (${domain}).`;
-    let step2Text = `Host Check: Standard domain format found. No obvious phishing keywords detected in URL path.`;
-    let step3Text = `Verdict: Safe to proceed with normal caution. Avoid sharing sensitive passwords.`;
-
     if (domain.includes('google.com') || domain.includes('play.google.com')) {
+      // 1-LINE RESPONSE FOR SAFE / OFFICIAL LINKS
       risk = 'Low';
       desc = `Official Google / Play Store domain signature detected for ${domain}.`;
       rec = `Safe to install app or proceed to official page.`;
-      step1Text = `Verified Source: Official Google domain (${domain}).`;
-      step2Text = `Security Pattern: Verified signature parameters detected.`;
-      step3Text = `Verdict: 100% Safe to download or install.`;
+
+      step1Head.innerText = `Pasted Link Verified`;
+      step1Body.innerHTML = `Verified Source: Official Google domain (${domain}).`;
+
+      step2Head.innerText = `Pattern Notice Breakdown`;
+      step2Body.innerHTML = `Security Pattern: Verified signature parameters detected.`;
+
+      step3Head.innerText = `Recommended Next Step`;
+      step3Body.innerHTML = `Verdict: 100% Safe to download or install.`;
+
     } else if (domain.includes('apk') || domain.includes('mod') || domain.includes('free') || path.includes('login') || path.includes('verify')) {
+      // DETAILED BULLET POINTS FOR SUSPICIOUS / HIGH RISK LINKS
       risk = 'High';
       desc = `Suspicious patterns detected in domain "${domain}". Keywords suggest unverified APK download or potential phishing attempt.`;
       rec = `Do NOT enter passwords or financial credentials on this page.`;
-      step1Text = `High Risk Domain: Detected suspicious keywords in host (${domain}).`;
-      step2Text = `Pattern Warning: Unverified third-party APK/login request path found.`;
-      step3Text = `Verdict: Dangerous! Do not open or enter sensitive information.`;
+
+      step1Head.innerText = `01 / PASTE — High Risk Domain`;
+      step1Body.innerHTML = `
+        <ul class="step-details-list">
+          <li><strong>Protocol:</strong> ${protocol} connection parsed.</li>
+          <li><strong>Host Flag:</strong> Suspicious keyword in host domain (${domain}).</li>
+          <li><strong>Endpoint:</strong> Request attempts to access sensitive path.</li>
+        </ul>
+      `;
+
+      step2Head.innerText = `02 / NOTICE — Threat Pattern Detection`;
+      step2Body.innerHTML = `
+        <ul class="step-details-list">
+          <li><strong>Pattern Alert:</strong> Contains high-risk words (mod/free/apk/login).</li>
+          <li><strong>Phishing Danger:</strong> May attempt fake credential harvesting.</li>
+          <li><strong>Reputation:</strong> Unverified 3rd-party hosting source.</li>
+        </ul>
+      `;
+
+      step3Head.innerText = `03 / DECIDE — Critical Safety Advice`;
+      step3Body.innerHTML = `
+        <ul class="step-details-list">
+          <li><strong>Verdict:</strong> High Risk! Do not proceed.</li>
+          <li><strong>Action:</strong> Close tab immediately. Do not install files.</li>
+          <li><strong>Rule:</strong> Never share OTP, passwords or banking info.</li>
+        </ul>
+      `;
+
     } else if (domain.split('.').length > 3 || domain.includes('-')) {
+      // DETAILED BULLET POINTS FOR MEDIUM RISK LINKS
       risk = 'Medium';
       desc = `Unusual sub-domain or hyphenated domain structure detected for ${domain}.`;
       rec = `Verify the domain owner before trusting sensitive details.`;
-      step1Text = `Unusual Domain Structure: Complex sub-domain structure for ${domain}.`;
-      step2Text = `Pattern Notice: Domain contains hyphens or extended sub-domains.`;
-      step3Text = `Verdict: Proceed with caution. Verify site owner before submitting data.`;
+
+      step1Head.innerText = `01 / PASTE — Complex Domain Analysis`;
+      step1Body.innerHTML = `
+        <ul class="step-details-list">
+          <li><strong>Protocol:</strong> ${protocol} Connection.</li>
+          <li><strong>Structure:</strong> Multiple sub-domains found in (${domain}).</li>
+        </ul>
+      `;
+
+      step2Head.innerText = `02 / NOTICE — Pattern Caution`;
+      step2Body.innerHTML = `
+        <ul class="step-details-list">
+          <li><strong>Typosquatting Risk:</strong> Verify name isn't mimicking a known brand.</li>
+          <li><strong>Hyphen Count:</strong> Non-standard domain naming format.</li>
+        </ul>
+      `;
+
+      step3Head.innerText = `03 / DECIDE — Precaution Steps`;
+      step3Body.innerHTML = `
+        <ul class="step-details-list">
+          <li><strong>Verdict:</strong> Proceed with Medium Caution.</li>
+          <li><strong>Action:</strong> Check site lock icon & verify owner before paying.</li>
+        </ul>
+      `;
+
+    } else {
+      // 1-LINE RESPONSE FOR NORMAL / UNKNOWN LOW RISK LINKS
+      step1Head.innerText = `Link Structure Verified`;
+      step1Body.innerHTML = `Valid ${protocol} connection parsed for ${domain}.`;
+
+      step2Head.innerText = `Pattern Analysis`;
+      step2Body.innerHTML = `Standard web domain layout with no immediate threat signatures.`;
+
+      step3Head.innerText = `Next Action`;
+      step3Body.innerHTML = `Proceed with standard online safety judgment.`;
     }
 
     // Main Result Box
@@ -237,16 +305,6 @@ function runAnalysis() {
     riskBadge.className = `risk-badge risk-${risk.toLowerCase()}`;
     resDesc.innerText = desc;
     resRec.innerText = rec;
-
-    // Populate the 3 Steps with Dynamic Data
-    step1Head.innerText = `Pasted Link Verified`;
-    step1Desc.innerText = step1Text;
-
-    step2Head.innerText = `Pattern Notice Breakdown`;
-    step2Desc.innerText = step2Text;
-
-    step3Head.innerText = `Recommended Next Step`;
-    step3Desc.innerText = step3Text;
 
   } catch (e) {
     errorMsg.style.display = 'block';
@@ -259,13 +317,15 @@ function resetCheck() {
   document.getElementById('resultContainer').style.display = 'none';
   document.getElementById('errorMsg').style.display = 'none';
 
-  // Reset steps to default text
+  // Reset steps to default
   document.getElementById('step1Head').innerText = "Bring the link here";
-  document.getElementById('step1Desc').innerText = "Paste a complete website URL. The link stays in your browser.";
+  document.getElementById('step1Body').innerHTML = "Paste a complete website URL. The link stays in your browser.";
+
   document.getElementById('step2Head').innerText = "Review URL patterns";
-  document.getElementById('step2Desc').innerText = "See local checks for host, path, and query patterns.";
+  document.getElementById('step2Body').innerHTML = "See local checks for host, path, and query patterns.";
+
   document.getElementById('step3Head').innerText = "Choose your next step";
-  document.getElementById('step3Desc').innerText = "Use practical reminders and your own good judgment before you act.";
+  document.getElementById('step3Body').innerHTML = "Use practical reminders and your own good judgment before you act.";
 }
 </script>
 
