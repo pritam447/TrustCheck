@@ -50,6 +50,11 @@
     .auth-divider::before { left: 0; }
     .auth-divider::after { right: 0; }
 
+    /* Interactive Input Fields inside Modal */
+    .modal-input-group { margin-bottom: 12px; display: none; }
+    .modal-input-group input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 14px; outline: none; background: #fafcf9; }
+    .modal-action-btn { width: 100%; background: var(--accent-green); color: white; border: none; border-radius: 10px; padding: 12px; font-weight: 600; font-size: 14px; cursor: pointer; margin-top: 8px; }
+
     /* Hero Section */
     .hero { text-align: center; margin-bottom: 24px; }
     .pill { display: inline-block; background: #e5ebe1; color: var(--accent-orange); font-weight: 700; font-size: 11px; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
@@ -119,20 +124,31 @@
   <div id="authModal">
     <div class="auth-modal-content">
       <div class="auth-title">Sign in to TrustCheck</div>
-      <div class="auth-sub">Please sign in to access link scanning & threat analysis.</div>
+      <div class="auth-sub" id="modalSubText">Please sign in to access link scanning & threat analysis.</div>
 
-      <button class="btn-auth google-btn" onclick="simulateLogin('Google User')">
-        <span>🌐</span> Continue with Google
-      </button>
-      
-      <button class="btn-auth" onclick="simulateLogin('Microsoft User')" style="color: #00a4ef;">
-        <span>🪟</span> Continue with Microsoft
-      </button>
+      <!-- Main Buttons Grid -->
+      <div id="socialButtonsContainer">
+        <button class="btn-auth google-btn" onclick="promptEmailLogin('Google')">
+          <span>🌐</span> Continue with Google
+        </button>
+        
+        <button class="btn-auth" onclick="promptEmailLogin('Microsoft')" style="color: #00a4ef;">
+          <span>🪟</span> Continue with Microsoft
+        </button>
 
-      <div class="social-grid">
-        <button class="btn-social-sm" onclick="simulateLogin('Facebook User')"><span>f</span> Facebook</button>
-        <button class="btn-social-sm" onclick="simulateLogin('Instagram User')"><span>📸</span> Instagram</button>
-        <button class="btn-social-sm" onclick="simulateLogin('Mobile User')"><span>📱</span> Mobile</button>
+        <div class="social-grid">
+          <button class="btn-social-sm" onclick="promptEmailLogin('Facebook')"><span>f</span> Facebook</button>
+          <button class="btn-social-sm" onclick="promptEmailLogin('Instagram')"><span>📸</span> Instagram</button>
+          <button class="btn-social-sm" onclick="startMobileLogin()"><span>📱</span> Mobile</button>
+        </div>
+      </div>
+
+      <!-- Interactive Input Container (Hidden by default) -->
+      <div id="interactiveInputContainer" class="modal-input-group">
+        <label id="inputLabel" style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;"></label>
+        <input type="text" id="dynamicInputField" placeholder="" />
+        <button class="modal-action-btn" id="dynamicActionBtn" onclick="handleDynamicSubmit()">Continue</button>
+        <button onclick="resetModalView()" style="background:none; border:none; color: var(--text-muted); font-size: 11px; width:100%; margin-top:8px; cursor:pointer;">Back to options</button>
       </div>
 
       <div class="auth-divider">security access required</div>
@@ -236,26 +252,85 @@
 
 <script>
 let isLoggedIn = false;
+let currentAuthStep = 'options'; // 'options', 'mobile_num', 'otp', 'email'
+let tempPhone = '';
 
 function handleAuthAction() {
   if (!isLoggedIn) {
     document.getElementById('authModal').style.display = 'flex';
+    resetModalView();
   } else {
     isLoggedIn = false;
     document.getElementById('authNavBtn').innerText = 'Login';
     document.getElementById('welcomeMsg').style.display = 'none';
     document.getElementById('authModal').style.display = 'flex';
+    resetModalView();
     resetCheck();
   }
 }
 
-function simulateLogin(providerName) {
+function resetModalView() {
+  currentAuthStep = 'options';
+  document.getElementById('socialButtonsContainer').style.display = 'block';
+  document.getElementById('interactiveInputContainer').style.display = 'none';
+  document.getElementById('modalSubText').innerText = 'Please sign in to access link scanning & threat analysis.';
+  document.getElementById('dynamicInputField').value = '';
+}
+
+function promptEmailLogin(provider) {
+  currentAuthStep = 'email';
+  document.getElementById('socialButtonsContainer').style.display = 'none';
+  document.getElementById('interactiveInputContainer').style.display = 'block';
+  document.getElementById('modalSubText').innerText = `Sign in with ${provider}`;
+  document.getElementById('inputLabel').innerText = `Enter your ${provider} Email ID:`;
+  document.getElementById('dynamicInputField').placeholder = `name@${provider.toLowerCase()}.com`;
+  document.getElementById('dynamicActionBtn').innerText = 'Continue to Sign In';
+}
+
+function startMobileLogin() {
+  currentAuthStep = 'mobile_num';
+  document.getElementById('socialButtonsContainer').style.display = 'none';
+  document.getElementById('interactiveInputContainer').style.display = 'block';
+  document.getElementById('modalSubText').innerText = 'Mobile Number Authentication';
+  document.getElementById('inputLabel').innerText = 'Enter your 10-digit Mobile Number:';
+  document.getElementById('dynamicInputField').placeholder = '9876543210';
+  document.getElementById('dynamicActionBtn').innerText = 'Send OTP';
+}
+
+function handleDynamicSubmit() {
+  const val = document.getElementById('dynamicInputField').value.trim();
+  if (!val) {
+    alert('Please enter a valid value!');
+    return;
+  }
+
+  if (currentAuthStep === 'email') {
+    completeLogin(val.split('@')[0] || 'User');
+  } else if (currentAuthStep === 'mobile_num') {
+    if (val.length < 10) {
+      alert('Please enter a valid mobile number.');
+      return;
+    }
+    tempPhone = val;
+    currentAuthStep = 'otp';
+    document.getElementById('modalSubText').innerText = `OTP sent to +91 ${tempPhone}`;
+    document.getElementById('inputLabel').innerText = 'Enter 4-digit OTP:';
+    document.getElementById('dynamicInputField').value = '';
+    document.getElementById('dynamicInputField').placeholder = '1234';
+    document.getElementById('dynamicActionBtn').innerText = 'Verify & Login';
+  } else if (currentAuthStep === 'otp') {
+    completeLogin(`Mobile (${tempPhone.slice(-4)})`);
+  }
+}
+
+function completeLogin(name) {
   isLoggedIn = true;
   document.getElementById('authNavBtn').innerText = 'Logout';
   const welcomeMsg = document.getElementById('welcomeMsg');
-  welcomeMsg.innerText = `Hi, ${providerName.split(' ')[0]}`;
+  welcomeMsg.innerText = `Hi, ${name}`;
   welcomeMsg.style.display = 'block';
   document.getElementById('authModal').style.display = 'none';
+  resetModalView();
 }
 
 function cleanAndValidateUrl(rawInput) {
@@ -289,6 +364,7 @@ function cleanAndValidateUrl(rawInput) {
 function runAnalysis() {
   if (!isLoggedIn) {
     document.getElementById('authModal').style.display = 'flex';
+    resetModalView();
     return;
   }
 
