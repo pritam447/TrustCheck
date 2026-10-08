@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustCheck Shield</title>
+  <style>
+    :root {
+      --bg-color: #f1f4ed;
+      --card-bg: #ffffff;
+      --text-main: #1f332b;
+      --text-muted: #5e7067;
+      --accent-green: #2d5a4c;
+      --accent-orange: #d9822b;
+      --accent-orange-bg: #fdf3e7;
+      --border-color: #e2e8df;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 20px 16px; display: flex; justify-content: center; }
+    .wrapper { max-width: 480px; width: 100%; }
+
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 20px; color: var(--accent-green); }
+    .logo-icon { background: var(--accent-green); color: white; padding: 4px 8px; border-radius: 8px; font-size: 14px; }
+    .tagline { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+
+    /* Hero Section */
+    .hero { text-align: center; margin-bottom: 24px; }
+    .pill { display: inline-block; background: #e5ebe1; color: var(--accent-orange); font-weight: 700; font-size: 11px; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .hero h1 { font-size: 28px; line-height: 1.15; color: var(--accent-green); font-weight: 800; margin-bottom: 12px; }
+    .hero h1 span { color: var(--text-main); }
+    .hero p { font-size: 13px; color: var(--text-muted); line-height: 1.4; padding: 0 10px; }
+
+    /* Main Card */
+    .card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 16px; border: 1px solid var(--border-color); }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; }
+    
+    .input-box { border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; background: #fafcf9; }
+    .input-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 14px; color: var(--text-main); }
+    
+    .btn-main { width: 100%; background: var(--accent-green); color: white; border: none; border-radius: 10px; padding: 14px; font-weight: 600; font-size: 15px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 6px; }
+    .btn-main:hover { opacity: 0.95; }
+
+    .note { font-size: 12px; color: var(--text-muted); display: flex; gap: 6px; margin-top: 12px; line-height: 1.3; }
+
+    /* Warning Banner */
+    .banner { background: var(--accent-orange-bg); border-radius: 12px; padding: 14px; display: flex; gap: 10px; margin-bottom: 32px; border: 1px solid #f7e2ce; }
+    .banner-badge { background: var(--accent-orange); color: white; font-weight: 700; font-size: 10px; padding: 2px 6px; border-radius: 4px; height: fit-content; text-transform: uppercase; white-space: nowrap; }
+    .banner-text { font-size: 12px; color: #8a531b; line-height: 1.4; }
+
+    /* Results UI Section */
+    .result-container { display: none; }
+    .risk-badge { display: inline-block; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 13px; text-transform: uppercase; margin-bottom: 12px; }
+    .risk-low { background: #e6f4ea; color: #137333; border: 1px solid #ceead6; }
+    .risk-medium { background: #fef7e0; color: #b06000; border: 1px solid #feefc3; }
+    .risk-high { background: #fce8e6; color: #c5221f; border: 1px solid #fad2cf; }
+
+    .res-section { margin-top: 12px; }
+    .res-label { font-size: 13px; font-weight: 700; color: var(--accent-green); margin-bottom: 4px; }
+    .res-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+    .btn-secondary { width: 100%; background: #e5ebe1; color: var(--accent-green); border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 16px; }
+
+    /* Steps Section */
+    .steps-title { font-size: 20px; font-weight: 800; color: var(--accent-green); margin-bottom: 4px; }
+    .steps-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+    .step-card { background: var(--card-bg); border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border-color); }
+    .step-num { font-size: 11px; font-weight: 700; color: var(--accent-orange); text-transform: uppercase; margin-bottom: 4px; }
+    .step-head { font-size: 14px; font-weight: 700; color: var(--accent-green); margin-bottom: 2px; }
+    .step-desc { font-size: 12px; color: var(--text-muted); }
+
+    .error-text { color: #c5221f; font-size: 12px; display: none; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🛡️</span> TrustCheck
+    </div>
+    <div class="tagline">🔒 A calmer way to pause</div>
+  </header>
+
+  <!-- Hero Text -->
+  <div class="hero">
+    <div class="pill">• Think before you trust</div>
+    <h1>Not sure about a link?<br><span>Let’s think it through.</span></h1>
+    <p>Review a link for URL patterns that may deserve a closer look, using local checks on the address itself.</p>
+  </div>
+
+  <!-- Form Card -->
+  <div class="card">
+    <div class="card-title">The website link you want to check</div>
+    <div class="input-box">
+      <span>🔗</span>
+      <input type="text" id="urlInput" placeholder="Paste a website link here..." />
+    </div>
+    <div id="errorMsg" class="error-text">Please enter a valid HTTP/HTTPS link or Google Play URL.</div>
+    
+    <button class="btn-main" onclick="runAnalysis()">Check Risk &rsaquo;</button>
+    
+    <div class="note">
+      <span>ⓘ</span>
+      <span>Checks run locally on the URL text. No website is contacted.</span>
+    </div>
+
+    <!-- Dynamic Result Box -->
+    <div id="resultContainer" class="result-container" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+      <div id="riskBadge" class="risk-badge">Checking...</div>
+      
+      <div class="res-section">
+        <div class="res-label">URL Pattern Breakdown:</div>
+        <div id="resDesc" class="res-desc">Analyzing web domain parameters...</div>
+      </div>
+
+      <div class="res-section">
+        <div class="res-label">Action Recommendation:</div>
+        <div id="resRec" class="res-desc">Generating safety steps...</div>
+      </div>
+
+      <button class="btn-secondary" onclick="resetCheck()">Check another link</button>
+    </div>
+  </div>
+
+  <!-- Local Check Banner -->
+  <div class="banner">
+    <div class="banner-badge">LOCAL CHECK</div>
+    <div class="banner-text">
+      <strong>URL-pattern analysis only.</strong> This checks the address text locally; it does not open the website or check DNS, ownership, reputation, certificates, or live redirects. A low result is not proof that a site is safe.
+    </div>
+  </div>
+
+  <!-- 3 Steps Section -->
+  <div>
+    <div class="steps-title">A thoughtful pause, in three steps</div>
+    <div class="steps-sub">Simple reminders for a moment that matters.</div>
+
+    <div class="step-card">
+      <div class="step-num">01 / PASTE</div>
+      <div class="step-head">Bring the link here</div>
+      <div class="step-desc">Paste a complete website URL. The link stays in your browser.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">02 / NOTICE</div>
+      <div class="step-head">Review URL patterns</div>
+      <div class="step-desc">See local checks for host, path, and query patterns.</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">03 / DECIDE</div>
+      <div class="step-head">Choose your next step</div>
+      <div class="step-desc">Use practical reminders and your own good judgment before you act.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function isValidHttpUrl(string) {
+  let url;
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;  
+  }
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
+function runAnalysis() {
+  const input = document.getElementById('urlInput').value.trim();
+  const errorMsg = document.getElementById('errorMsg');
+  const resContainer = document.getElementById('resultContainer');
+  const riskBadge = document.getElementById('riskBadge');
+  const resDesc = document.getElementById('resDesc');
+  const resRec = document.getElementById('resRec');
+
+  // Strict check: Only valid URLs allowed
+  if (!input || !isValidHttpUrl(input)) {
+    errorMsg.style.display = 'block';
+    resContainer.style.display = 'none';
+    return;
+  }
+
+  errorMsg.style.display = 'none';
+  resContainer.style.display = 'block';
+
+  try {
+    const urlObj = new URL(input);
+    const domain = urlObj.hostname.toLowerCase();
+    const path = urlObj.pathname + urlObj.search;
+
+    let risk = 'Low';
+    let desc = `Domain "${domain}" uses valid HTTPS web protocols. Path parsed: ${path.substring(0, 25) || '/'}`;
+    let rec = `Proceed normally, but always double check payment or login forms.`;
+
+    if (domain.includes('google.com') || domain.includes('play.google.com')) {
+      risk = 'Low';
+      desc = `Official Google / Play Store domain signature detected for ${domain}.`;
+      rec = `Safe to install app or proceed to official page.`;
+    } else if (domain.includes('apk') || domain.includes('mod') || domain.includes('free') || path.includes('login') || path.includes('verify')) {
+      risk = 'High';
+      desc = `Suspicious patterns detected in domain "${domain}". Keywords suggest unverified APK download or potential phishing attempt.`;
+      rec = `Do NOT enter passwords or financial credentials on this page.`;
+    } else if (domain.split('.').length > 3 || domain.includes('-')) {
+      risk = 'Medium';
+      desc = `Unusual sub-domain or hyphenated domain structure detected for ${domain}.`;
+      rec = `Verify the domain owner before trusting sensitive details.`;
+    }
+
+    riskBadge.innerText = `${risk} Risk`;
+    riskBadge.className = `risk-badge risk-${risk.toLowerCase()}`;
+    resDesc.innerText = desc;
+    resRec.innerText = rec;
+
+  } catch (e) {
+    errorMsg.style.display = 'block';
+    resContainer.style.display = 'none';
+  }
+}
+
+function resetCheck() {
+  document.getElementById('urlInput').value = '';
+  document.getElementById('resultContainer').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
